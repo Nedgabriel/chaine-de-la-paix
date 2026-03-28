@@ -1,0 +1,1146 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reliés pour la Paix 2026</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --navy: #1a2744;
+        --cream: #f5f0e8;
+        --olive: #313a20;
+        --gold: #c9a84c;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+        overflow: hidden;
+      }
+      body {
+        font-family: "DM Sans", sans-serif;
+        background: #0f1a30;
+        color: #1a1a2e;
+      }
+
+      /* ── FULL PAGE PHOTO BACKGROUND ── */
+      #bgPhoto {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        background-size: cover;
+        background-position: center;
+        transition: opacity 0.5s ease;
+      }
+      /* Dark gradient overlay so UI stays readable */
+      #bgPhoto::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          90deg,
+          rgba(15, 26, 48, 0.3) 0%,
+          rgba(15, 26, 48, 0.55) 44%,
+          rgba(15, 26, 48, 0.82) 99%
+        );
+      }
+
+      /* ── HEADER ── */
+      .header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        background: rgba(26, 39, 68, 0.75);
+        backdrop-filter: blur(14px);
+        padding: 9px 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        border-bottom: 1px solid rgba(201, 168, 76, 0.3);
+      }
+      .header-title {
+        font-family: "Cormorant Garamond", serif;
+        font-size: 1.35rem;
+        font-weight: 500;
+        color: var(--cream);
+        letter-spacing: 0.05em;
+        white-space: nowrap;
+      }
+      .header-title span {
+        color: var(--gold);
+      }
+      .header-title small {
+        display: block;
+        font-size: 0.62rem;
+        letter-spacing: 0.2em;
+        color: rgba(245, 240, 232, 0.42);
+        font-family: "DM Sans", sans-serif;
+        text-transform: uppercase;
+        margin-top: 1px;
+      }
+      .header-right {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+      .city-selector {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .city-selector label {
+        font-size: 0.68rem;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        color: rgba(245, 240, 232, 0.5);
+      }
+      select {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(201, 168, 76, 0.4);
+        color: var(--cream);
+        padding: 7px 34px 7px 13px;
+        font-family: "DM Sans", sans-serif;
+        font-size: 0.85rem;
+        border-radius: 5px;
+        cursor: pointer;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23c9a84c'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 11px center;
+        min-width: 230px;
+      }
+      select:focus {
+        outline: none;
+        border-color: var(--gold);
+      }
+      select option {
+        background: #1a2744;
+      }
+      .btn-flyers {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        background: rgba(201, 168, 76, 0.12);
+        border: 1px solid rgba(201, 168, 76, 0.45);
+        color: var(--gold);
+        padding: 7px 14px;
+        border-radius: 5px;
+        font-family: "DM Sans", sans-serif;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+      }
+      .btn-flyers:hover {
+        background: rgba(201, 168, 76, 0.22);
+        border-color: var(--gold);
+      }
+      .btn-flyers svg {
+        width: 14px;
+        height: 14px;
+        fill: var(--gold);
+      }
+
+      /* ── MAIN LAYOUT ── */
+      .main {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        height: 100vh;
+        padding-top: 52px;
+      }
+
+      /* ── LEFT PANEL ── (transparent, over bg photo) */
+      .left-panel {
+        width: 60%;
+        position: relative;
+        display: flex;
+        align-items: flex-end;
+      }
+      .contact-card {
+        position: absolute;
+        bottom: 28px;
+        left: 22px;
+        right: 22px;
+        background: rgba(238, 232, 218, 0.541);
+        backdrop-filter: blur(18px) saturate(1.2);
+        border-radius: 12px;
+        padding: 20px 22px 18px;
+        transform: translateY(16px);
+        opacity: 0;
+        transition:
+          transform 0.55s cubic-bezier(0.22, 0.68, 0, 1.2),
+          opacity 0.45s ease;
+      }
+      .contact-card.visible {
+        transform: translateY(0);
+        opacity: 1;
+      }
+      .dove-icon {
+        position: absolute;
+        top: 15px;
+        right: 17px;
+        font-size: 1.7rem;
+        opacity: 0.7;
+      }
+      .contact-city-label {
+        font-size: 0.64rem;
+        text-transform: uppercase;
+        letter-spacing: 0.2em;
+        color: var(--olive);
+        margin-bottom: 2px;
+      }
+      .contact-fullname {
+        font-family: "Cormorant Garamond", serif;
+        font-size: 1.65rem;
+        font-weight: 500;
+        color: var(--navy);
+        line-height: 1.1;
+        margin-bottom: 11px;
+      }
+      .contact-fields {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+      .contact-sep {
+        font-size: 0.68rem;
+        font-weight: 500;
+        color: #666;
+        letter-spacing: 0.05em;
+        margin-top: 8px;
+        margin-bottom: 2px;
+      }
+      .contact-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.8rem;
+        color: #2c2c3e;
+      }
+      .ci {
+        width: 23px;
+        height: 23px;
+        background: var(--navy);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .ci svg {
+        width: 10px;
+        height: 10px;
+        fill: var(--gold);
+      }
+      .no-info {
+        font-style: italic;
+        color: #888;
+        font-size: 0.78rem;
+      }
+
+      /* ── RIGHT PANEL ── */
+      .right-panel {
+        width: 56%;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* Map wrapper with gradient vignette */
+      .map-wrapper {
+        height: 44%;
+        min-height: 180px;
+        position: relative;
+        flex-shrink: 0;
+        border-radius: 18px;
+        overflow: hidden;
+      }
+      #map {
+        width: 100%;
+        height: 100%;
+      }
+
+      #map,
+      .map-wrapper {
+        border-radius: 18px;
+      }
+
+      /* Gradient vignette over map edges */
+      .map-wrapper::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        z-index: 400;
+        background:
+        /* top */
+          linear-gradient(to bottom, rgba(15, 26, 48, 0) 0%, transparent 22%),
+          /* bottom */
+          linear-gradient(to top, rgba(15, 26, 48, 0) 0%, transparent 28%),
+          /* left */
+          linear-gradient(to right, rgba(15, 26, 48, 0) 0%, transparent 18%),
+          /* right */
+          linear-gradient(to left, rgba(15, 26, 48, 0) 0%, transparent 18%);
+      }
+
+      /* Mini cards strip — semi-transparent so bg photo shows through */
+      .mini-strip {
+        flex: 1;
+        padding: 10px 10px 8px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 7px;
+        overflow-y: auto;
+        align-content: flex-start;
+        border-top: 1px solid rgba(201, 168, 76, 0.15);
+        scrollbar-width: thin;
+        scrollbar-color: var(--gold) rgba(255, 255, 255, 0.05);
+      }
+      .mini-strip::-webkit-scrollbar {
+        width: 3px;
+      }
+      .mini-strip::-webkit-scrollbar-thumb {
+        background: var(--gold);
+        border-radius: 2px;
+      }
+
+      .mini-card {
+        background: rgba(56, 64, 100, 0.397);
+        border: 1px solid rgba(201, 168, 76, 0.2);
+        border-radius: 8px;
+        padding: 10px 14px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        min-width: 118px;
+        text-align: center;
+        flex-shrink: 0;
+      }
+      .mini-card:hover {
+        background: rgba(201, 168, 76, 0.16);
+        border-color: rgba(201, 168, 76, 0.55);
+        transform: translateY(-2px);
+      }
+      .mini-card.active {
+        background: rgba(201, 168, 76, 0.2);
+        border-color: var(--gold);
+      }
+      .mc-flag {
+        font-size: 1rem;
+        margin-bottom: 1px;
+      }
+      .mc-city {
+        font-size: 0.57rem;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        color: var(--gold);
+        margin-bottom: 2px;
+        line-height: 1.3;
+      }
+      .mc-name {
+        font-family: "Cormorant Garamond", serif;
+        font-size: 1rem;
+        color: var(--cream);
+        line-height: 1.2;
+      }
+
+      /* Leaflet overrides */
+      .leaflet-popup-content-wrapper {
+        background: var(--navy);
+        color: var(--cream);
+        border-radius: 8px;
+        font-family: "DM Sans", sans-serif;
+        font-size: 0.83rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      }
+      .leaflet-popup-tip {
+        background: var(--navy);
+      }
+      .leaflet-popup-close-button {
+        color: var(--gold) !important;
+      }
+      .leaflet-control-zoom a {
+        background: rgba(26, 39, 68, 0.85) !important;
+        color: var(--gold) !important;
+        border-color: rgba(201, 168, 76, 0.3) !important;
+      }
+      .leaflet-control-attribution {
+        background: rgba(15, 26, 48, 0.6) !important;
+        color: rgba(255, 255, 255, 0.4) !important;
+        font-size: 0.6rem !important;
+      }
+      .leaflet-control-attribution a {
+        color: var(--gold) !important;
+      }
+
+      /* ── MODAL FLYERS ── */
+      .modal-backdrop {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 2000;
+        background: rgba(10, 18, 40, 0.82);
+        backdrop-filter: blur(6px);
+        align-items: center;
+        justify-content: center;
+      }
+      .modal-backdrop.open {
+        display: flex;
+      }
+      .modal {
+        background: var(--cream);
+        border-radius: 14px;
+        padding: 34px 38px 30px;
+        max-width: 520px;
+        width: 90%;
+        position: relative;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        animation: modalIn 0.35s cubic-bezier(0.22, 0.68, 0, 1.2) both;
+      }
+      @keyframes modalIn {
+        from {
+          transform: scale(0.88) translateY(20px);
+          opacity: 0;
+        }
+      }
+      .modal-close {
+        position: absolute;
+        top: 13px;
+        right: 15px;
+        background: none;
+        border: none;
+        font-size: 1.4rem;
+        cursor: pointer;
+        color: #777;
+      }
+      .modal h2 {
+        font-family: "Cormorant Garamond", serif;
+        font-size: 1.8rem;
+        color: var(--navy);
+        margin-bottom: 6px;
+      }
+      .modal p {
+        font-size: 0.86rem;
+        color: #555;
+        line-height: 1.6;
+        margin-bottom: 16px;
+      }
+      .flyer-list {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .flyer-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: rgba(26, 39, 68, 0.07);
+        border-radius: 7px;
+        padding: 11px 14px;
+        font-size: 0.84rem;
+        color: var(--navy);
+      }
+      .flyer-item span {
+        flex: 1;
+      }
+      .flyer-item a {
+        font-size: 0.75rem;
+        background: var(--navy);
+        color: var(--gold);
+        padding: 4px 12px;
+        border-radius: 4px;
+        text-decoration: none;
+      }
+      .flyer-coming {
+        text-align: center;
+        padding: 22px 0 6px;
+        font-family: "Cormorant Garamond", serif;
+        font-size: 1.05rem;
+        color: #aaa;
+        font-style: italic;
+      }
+
+      /* ── MOBILE ── */
+      @media (max-width: 760px) {
+        html,
+        body {
+          overflow: auto;
+          -webkit-overflow-scrolling: touch;
+        }
+
+        /* Header : colonne centrée, éléments pleine largeur */
+        .header {
+          flex-direction: column;
+          align-items: stretch;
+          gap: 6px;
+          padding: 8px 12px 10px;
+        }
+        .header-title {
+          text-align: center;
+        }
+        .header-right {
+          flex-direction: column;
+          gap: 6px;
+          width: 100%;
+        }
+        .city-selector {
+          width: 100%;
+          gap: 4px;
+        }
+        .city-selector label {
+          display: none; /* masqué : économie de place */
+        }
+        select {
+          min-width: unset;
+          width: 100%;
+          font-size: 0.9rem;
+          padding: 9px 34px 9px 13px;
+        }
+        .btn-flyers {
+          width: 100%;
+          justify-content: center;
+          padding: 9px 14px;
+        }
+
+        /* Layout principal : empilement vertical */
+        .main {
+          flex-direction: column;
+          height: auto;
+          /* padding-top est ajusté dynamiquement via JS */
+        }
+
+        /* Panneau gauche : photo de fond + carte contact */
+        .left-panel {
+          width: 100%;
+          min-height: 220px;
+          position: relative;
+        }
+        .contact-card {
+          position: relative; /* sort du flux absolu sur mobile */
+          bottom: auto;
+          left: auto;
+          right: auto;
+          margin: 12px;
+          transform: none;
+          opacity: 1;
+        }
+        .contact-card.visible {
+          transform: none;
+        }
+
+        /* Panneau droit */
+        .right-panel {
+          width: 100%;
+        }
+        .map-wrapper {
+          height: 56vw;
+          min-height: 240px;
+          border-radius: 0; /* évite artefacts Leaflet sur mobile */
+        }
+        #map,
+        .map-wrapper {
+          border-radius: 0;
+        }
+
+        /* Mini-strip : hauteur libre, scroll naturel */
+        .mini-strip {
+          max-height: none;
+          min-height: 120px;
+          padding-bottom: 16px;
+        }
+
+        /* Mini-cards : cibles tactiles plus grandes */
+        .mini-card {
+          padding: 12px 16px;
+          min-width: 110px;
+        }
+        .mc-flag {
+          font-size: 1.2rem;
+        }
+        .mc-city {
+          font-size: 0.6rem;
+        }
+        .mc-name {
+          font-size: 1.05rem;
+        }
+
+        /* Fond photo : dégradé vertical sur mobile */
+        #bgPhoto::after {
+          background: linear-gradient(
+            180deg,
+            rgba(15, 26, 48, 0.35) 0%,
+            rgba(15, 26, 48, 0.78) 100%
+          );
+        }
+
+        /* Modal pleine largeur sur très petits écrans */
+        .modal {
+          padding: 24px 20px 20px;
+          width: 96%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- FULL PAGE BACKGROUND PHOTO -->
+    <div id="bgPhoto"></div>
+
+    <header class="header">
+      <div class="header-title">
+        🕊️ Chaine pour la <span>Paix</span>
+        <small>Chaîne mondiale · 2 mai 2026</small>
+      </div>
+      <div class="header-right">
+        <button class="btn-flyers" onclick="openFlyers()">
+          <svg viewBox="0 0 24 24">
+            <path
+              d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zM8 17v-2h8v2H8zm0-4v-2h8v2H8z"
+            />
+          </svg>
+          Flyers & Documents
+        </button>
+        <div class="city-selector">
+          <label>Choisir un lieu</label>
+          <select id="citySelect" onchange="selectCity(this.value)">
+            <option value="">— Sélectionner —</option>
+          </select>
+        </div>
+      </div>
+    </header>
+
+    <!-- MODAL -->
+    <div class="modal-backdrop" id="flyersModal">
+      <div class="modal">
+        <button class="modal-close" onclick="closeFlyers()">✕</button>
+        <h2>📄 Flyers & Documents</h2>
+        <p>
+          Documents officiels de la chaîne pour la Paix du
+          <strong>2 mai 2026</strong>.
+        </p>
+        <!-- ============================================================
+         POUR AJOUTER UN FLYER : décommentez et adaptez un bloc <li>
+         ============================================================
+    <ul class="flyer-list">
+      <li class="flyer-item">
+        <span>📌 Flyer A4 – Événement du 2 mai</span>
+        <a href="flyer_2mai.pdf" target="_blank">Télécharger</a>
+      </li>
+    </ul>
+    ============================================================ -->
+        <div class="flyer-coming">Flyers disponibles prochainement…</div>
+      </div>
+    </div>
+
+    <div class="main">
+      <!-- LEFT : transparent, photo visible behind -->
+      <div class="left-panel">
+        <div class="contact-card" id="contactCard">
+          <div class="dove-icon">🕊️</div>
+          <div class="contact-city-label" id="cardCity"></div>
+          <div class="contact-fullname" id="cardName"></div>
+          <div class="contact-fields" id="cardFields"></div>
+        </div>
+      </div>
+
+      <!-- RIGHT -->
+      <div class="right-panel">
+        <div class="map-wrapper">
+          <div id="map"></div>
+        </div>
+        <div class="mini-strip" id="miniStrip"></div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+      // ================================================================
+      //  🕊️  DONNÉES — RELIÉS POUR LA PAIX 2026
+      //
+      //  ➜ Ajoutez / modifiez / supprimez des blocs { } facilement.
+      //  ➜ Plusieurs coordinateurs par ville → tableau coordinateurs: [...]
+      //  ➜ Pour la photo : URL d'une image locale ou web
+      //  ➜ L'ordre des villes détermine l'ordre de la ligne rouge sur la carte
+      // ================================================================
+      const VILLES = [
+        {
+          ville: "Lyon",
+          drapeau: "🇫🇷",
+          lat: 45.764,
+          lng: 4.8357,
+          photo:
+            "https://www.city-lyon.fr/wp-content/uploads/sites/137/2013/12/lyon-meilleur-pire-arrondissements-850x593.jpg.webp",
+          coordinateurs: [
+            {
+              prenom: "Edith",
+              nom: "Mallecourt",
+              email: "mallecourt.edith69@gmail.com",
+              telephone: "06.16.04.95.33",
+            },
+          ],
+        },
+        {
+          ville: "Lyon Sud – Val d'Ozon",
+          drapeau: "🇫🇷",
+          lat: 45.625,
+          lng: 4.935,
+          photo:
+            "https://www.rhonetourisme.com/gastronomie-nature-autour-lyon/uploads/2024/09/val-doingt-jbo_0w9a8626-cd69-julien-bourreau-aspect-ratio-600-450.jpg",
+          coordinateurs: [
+            {
+              prenom: "Maryse",
+              nom: "Vercheyre",
+              email: "mary.vercheyre@gmail.com",
+              telephone: "06.22.82.54.11",
+            },
+          ],
+        },
+        {
+          ville: "Valence",
+          drapeau: "🇫🇷",
+          lat: 44.9334,
+          lng: 4.8924,
+          photo:
+            "https://www.okvoyage.com/wp-content/uploads/2023/11/visiter-valence-entre-drome-et-ardeche-1536x1152.jpg",
+          coordinateurs: [
+            {
+              prenom: "Rolande",
+              nom: "Teichert",
+              email: "rolande.teichert@free.fr",
+              telephone: "06.50.43.48.77",
+            },
+            {
+              prenom: "Marylise",
+              nom: "Vincent",
+              email: "marylisevincent@sfr.fr",
+              telephone: "06.24.03.22.59",
+            },
+          ],
+        },
+        {
+          ville: "Buis-les-Baronnies",
+          drapeau: "🇫🇷",
+          lat: 44.275,
+          lng: 5.278,
+          photo:
+            "https://encrypted-tbn0.gstatic.com/licensed-image?q=tbn:ANd9GcQNCyE4ic4uf4j1-P4KtZFhACrsmij7OC3AsbbZlkzOtfLNo_SPeceLPQ80i7NvvrOzJWGSzU4AmwwRTXGL2FrG5LI&s=19",
+          coordinateurs: [
+            {
+              prenom: "Dom",
+              nom: "Mandart",
+              email: "dom.mandart@orange.fr",
+              telephone: "",
+            },
+          ],
+        },
+        {
+          ville: "Die",
+          drapeau: "🇫🇷",
+          lat: 44.7512,
+          lng: 5.37,
+          photo:
+            "https://www.sncf-connect.com/assets/styles/ratio_2_1_max_width_961/public/media/2021-11/die-ville-montagne.jpg?h=e7f34599&itok=3cG0qeeA",
+          coordinateurs: [
+            {
+              prenom: "Alain",
+              nom: "Dangoisse",
+              email: "alain.dangoisse@gmail.com",
+              telephone: "06.70.92.91.63",
+            },
+          ],
+        },
+        {
+          ville: "Col de l'Arzelier – La Soldanelle",
+          drapeau: "🇫🇷",
+          lat: 45.04,
+          lng: 5.57,
+          photo:
+            "https://static.auvergnerhonealpes-tourisme.com/wp-content/uploads/external/95fd0acf3c293fd65dda4ec98e275ba0-7154918-1000x710.jpg",
+          coordinateurs: [
+            {
+              prenom: "Anoouk",
+              nom: "Thibault",
+              email: "lasoldanelle@orange.fr",
+              telephone: "06.13.05.19.81",
+            },
+          ],
+        },
+
+        {
+          ville: "Grenoble - Herbeys",
+          drapeau: "🇫🇷",
+          lat: 45.1885,
+          lng: 5.7245,
+          photo:
+            "https://lalpinmalin.com/wp-content/uploads/2025/06/470581973_1137255951734130_6542450496342358713_n.jpg",
+          coordinateurs: [
+            {
+              prenom: "Jean-Noël",
+              nom: "Causse",
+              email: "Jean-noel.causse@wanadoo.fr",
+              telephone: "06.83.75.13.67",
+            },
+          ],
+        },
+        {
+          ville: "Saint-Étienne",
+          drapeau: "🇫🇷",
+          lat: 45.4397,
+          lng: 4.3872,
+          photo:
+            "https://www.saint-etienne.fr/sites/default/files/styles/img__1920x744__crop_main/public/media/images/stetienne_0238360.webp?itok=RqIIcwoC",
+          coordinateurs: [
+            {
+              prenom: "Béatrix",
+              nom: "Flis",
+              email: "flis.beatrix@gmail.com",
+              telephone: "06.70.28.65.90",
+            },
+          ],
+        },
+        {
+          ville: "Souternon",
+          drapeau: "🇫🇷",
+          lat: 45.9536,
+          lng: 3.9736,
+          photo:
+            "https://www.rhone-medieval.fr/galerie_42/galeries/45_Souternon/Souternon2025_013.jpg",
+          coordinateurs: [
+            {
+              prenom: "Céline",
+              nom: "Barbarin",
+              email: "contact@celinebarbarin.fr",
+              telephone: "06.75.70.44.26",
+            },
+          ],
+        },
+        {
+          ville: "Mâcon",
+          drapeau: "🇫🇷",
+          lat: 46.3067,
+          lng: 4.8282,
+          photo:
+            "https://upload.wikimedia.org/wikipedia/commons/a/ab/Vue_de_M%C3%A2con.jpg",
+          coordinateurs: [
+            {
+              prenom: "Brigitte",
+              nom: "Le Calvez",
+              email: "",
+              telephone: "06.18.46.53.25",
+            },
+          ],
+        },
+        {
+          ville: "Tournus",
+          drapeau: "🇫🇷",
+          lat: 46.568,
+          lng: 4.904,
+          photo:
+            "https://www.bourgogne-tourisme.com/uploads/external/67b7b910f4d6453fc403fe77db13cf77-tournus-LA-1600x900.jpg",
+          coordinateurs: [
+            {
+              prenom: "Daniel",
+              nom: "(L'Embarq)",
+              email: "",
+              telephone: "07.88.48.07.69",
+            },
+          ],
+        },
+        {
+          ville: "Dole",
+          drapeau: "🇫🇷",
+          lat: 47.093,
+          lng: 5.494,
+          photo:
+            "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Remote_views_of_Coll%C3%A9giale_Notre-Dame_de_Dole_02.jpg/1920px-Remote_views_of_Coll%C3%A9giale_Notre-Dame_de_Dole_02.jpg",
+          coordinateurs: [
+            {
+              prenom: "Marie",
+              nom: "Defert",
+              email: "Mariebibli@hotmail.com",
+              telephone: "07.87.88.47.48",
+            },
+          ],
+        },
+        {
+          ville: "Mulhouse",
+          drapeau: "🇫🇷",
+          lat: 47.7508,
+          lng: 7.3359,
+          photo:
+            "https://images.trvl-media.com/place/2345/73e6920d-3e7d-4356-98fa-4fb809f99dc7.jpg",
+          coordinateurs: [
+            {
+              prenom: "Carole",
+              nom: "Ecoffet",
+              email: "carole.ecoffet@1967gmail.com",
+              telephone: "06.20.32.64.72",
+            },
+            { prenom: "Hélène", nom: "Bourdel", email: "", telephone: "" },
+          ],
+        },
+        {
+          ville: "Bâle",
+          drapeau: "🇨🇭",
+          lat: 47.5596,
+          lng: 7.5886,
+          photo:
+            "https://images.winalist.com/blog/wp-content/uploads/2025/06/30135249/adobestock-169424767-768x512.jpeg.webp",
+          coordinateurs: [
+            {
+              prenom: "Christine",
+              nom: "Bannwarth",
+              email: "info@austober.ch",
+              telephone: "+41 78 627 56 34",
+            },
+          ],
+        },
+        {
+          ville: "Ulm – Allemagne",
+          drapeau: "🇩🇪",
+          lat: 48.4011,
+          lng: 9.9876,
+          photo:
+            "https://www.madame-oreille.com/wp-content/uploads/2016/09/IMG_6490.jpg",
+          coordinateurs: [
+            {
+              prenom: "Anke & Rainer",
+              nom: "Schmid",
+              email: "rainer.schmid@elkw.de",
+              telephone: "+49 176 36785211",
+            },
+          ],
+        },
+        {
+          ville: "Linz – Autriche",
+          drapeau: "🇦🇹",
+          lat: 48.3069,
+          lng: 14.2858,
+          photo:
+            "https://www.rivagesdumonde.fr/media/contentmanager/content/repeater_block_media_layout/images/550x400_Autriche-Linz-PlacePrincipale_rudi1976_AdobeStock_260474520-1.jpg",
+          coordinateurs: [
+            {
+              prenom: "Michael",
+              nom: "Huki",
+              email: "",
+              telephone: "+43 676 3…",
+            },
+          ],
+        },
+        {
+          ville: "Vienne – Autriche",
+          drapeau: "🇦🇹",
+          lat: 48.2082,
+          lng: 16.3738,
+          photo:
+            "https://www.onetwotrips.com/wp-content/uploads/2017/01/vienne-belvedere-1.jpg",
+          coordinateurs: [
+            {
+              prenom: "Hedwig",
+              nom: "Glatz",
+              email: "hedwig_glatz@yahoo.com",
+              telephone: "+43 680 1…",
+            },
+          ],
+        },
+        {
+          ville: "Taybeh – Palestine",
+          drapeau: "🇵🇸",
+          lat: 31.867,
+          lng: 35.289,
+          photo:
+            "https://www.cath.ch/wp-content/uploads/sites/3/2015/08/Taybeh.jpg",
+          coordinateurs: [
+            {
+              prenom: "Sujail",
+              nom: "Daibes",
+              email: "sujaildaibes3@gmail.com",
+              telephone: "+972 59 890 7725",
+            },
+          ],
+        },
+      ];
+      // ================================================================
+
+      // ── Background photo ─────────────────────────────────────────
+      const bgEl = document.getElementById("bgPhoto");
+      function setBg(url) {
+        bgEl.style.opacity = "0";
+        setTimeout(() => {
+          bgEl.style.backgroundImage = `url('${url}')`;
+          bgEl.style.opacity = "1";
+        }, 300);
+      }
+      bgEl.style.transition = "opacity 0.5s ease";
+
+      // ── Map ──────────────────────────────────────────────────────
+      const map = L.map("map", { zoomControl: true }).setView([46.5, 8.0], 5);
+      L.tileLayer(
+        "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+        {
+          attribution:
+            '© <a href="https://www.openstreetmap.org">OSM</a> © <a href="https://carto.com">CARTO</a>',
+          maxZoom: 18,
+        },
+      ).addTo(map);
+
+      // ── Red chain line ───────────────────────────────────────────
+      const chainCoords = VILLES.map((v) => [v.lat, v.lng]);
+
+      // Animated dashed red line
+      const chainLine = L.polyline(chainCoords, {
+        color: "#e03535",
+        weight: 2.5,
+        opacity: 0.75,
+        dashArray: "8, 6",
+        lineJoin: "round",
+        lineCap: "round",
+      }).addTo(map);
+
+      // Glow layer behind (thicker, more transparent)
+      L.polyline(chainCoords, {
+        color: "#ff4444",
+        weight: 7,
+        opacity: 0.18,
+        lineJoin: "round",
+      }).addTo(map);
+
+      // ── Markers ───────────────────────────────────────────────────
+      const markers = {};
+      function makeIcon(active) {
+        const s = active ? 20 : 12;
+        const shadow = active
+          ? "box-shadow:0 0 0 5px rgba(201,168,76,0.28),0 3px 10px rgba(0,0,0,0.45);"
+          : "box-shadow:0 2px 6px rgba(0,0,0,0.4);";
+        return L.divIcon({
+          className: "",
+          html: `<div style="width:${s}px;height:${s}px;background:#c9a84c;border:2.5px solid #fff;border-radius:50%;${shadow}transition:all .3s;"></div>`,
+          iconSize: [s, s],
+          iconAnchor: [s / 2, s / 2],
+        });
+      }
+      VILLES.forEach((v, i) => {
+        const pop = `<strong>${v.drapeau} ${v.ville}</strong><br>${v.coordinateurs.map((c) => `${c.prenom} ${c.nom}`).join("<br>")}`;
+        markers[i] = L.marker([v.lat, v.lng], { icon: makeIcon(false) })
+          .addTo(map)
+          .bindPopup(pop)
+          .on("click", () => selectCity(i));
+      });
+
+      // ── Dropdown & mini cards ─────────────────────────────────────
+      const sel = document.getElementById("citySelect");
+      const strip = document.getElementById("miniStrip");
+      VILLES.forEach((v, i) => {
+        const o = document.createElement("option");
+        o.value = i;
+        o.textContent = `${v.drapeau} ${v.ville} — ${v.coordinateurs[0].prenom} ${v.coordinateurs[0].nom}`;
+        sel.appendChild(o);
+
+        const c = document.createElement("div");
+        c.className = "mini-card";
+        c.id = `mc-${i}`;
+        c.innerHTML = `<div class="mc-flag">${v.drapeau}</div><div class="mc-city">${v.ville}</div><div class="mc-name">${v.coordinateurs[0].prenom}</div>`;
+        c.onclick = () => selectCity(i);
+        strip.appendChild(c);
+      });
+
+      // ── Select city ───────────────────────────────────────────────
+      let cur = null;
+      function selectCity(idx) {
+        idx = parseInt(idx);
+        if (isNaN(idx)) return;
+        const v = VILLES[idx];
+        sel.value = idx;
+
+        if (cur !== null) markers[cur].setIcon(makeIcon(false));
+        markers[idx].setIcon(makeIcon(true));
+        map.flyTo([v.lat, v.lng], 13, { duration: 1.2, easeLinearity: 0.25 });
+
+        // Background photo (full page)
+        setBg(v.photo);
+
+        // Contact card
+        document.getElementById("cardCity").textContent =
+          `${v.drapeau}  ${v.ville}`;
+        document.getElementById("cardName").textContent = v.coordinateurs
+          .map((c) => `${c.prenom} ${c.nom}`)
+          .join(" & ");
+
+        const fields = document.getElementById("cardFields");
+        fields.innerHTML = "";
+        v.coordinateurs.forEach((c, ci) => {
+          if (v.coordinateurs.length > 1) {
+            const sep = document.createElement("div");
+            sep.className = "contact-sep";
+            if (ci > 0) sep.style.marginTop = "9px";
+            sep.textContent = `${c.prenom} ${c.nom}`;
+            fields.appendChild(sep);
+          }
+          if (c.email)
+            fields.innerHTML += `<div class="contact-row"><div class="ci"><svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg></div><span>${c.email}</span></div>`;
+          if (c.telephone)
+            fields.innerHTML += `<div class="contact-row"><div class="ci"><svg viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg></div><span>${c.telephone}</span></div>`;
+          if (!c.email && !c.telephone)
+            fields.innerHTML += `<div class="contact-row"><span class="no-info">Coordonnées à compléter</span></div>`;
+        });
+
+        const cc = document.getElementById("contactCard");
+        cc.classList.remove("visible");
+        setTimeout(() => cc.classList.add("visible"), 430);
+
+        document
+          .querySelectorAll(".mini-card")
+          .forEach((mc, i) => mc.classList.toggle("active", i === idx));
+        document
+          .getElementById(`mc-${idx}`)
+          ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        cur = idx;
+      }
+
+      // ── Flyers modal ──────────────────────────────────────────────
+      function openFlyers() {
+        document.getElementById("flyersModal").classList.add("open");
+      }
+      function closeFlyers() {
+        document.getElementById("flyersModal").classList.remove("open");
+      }
+      document
+        .getElementById("flyersModal")
+        .addEventListener("click", function (e) {
+          if (e.target === this) closeFlyers();
+        });
+
+      // ── Ajustement dynamique du padding-top (header variable sur mobile) ──
+      function adjustMainPadding() {
+        const h = document.querySelector(".header").offsetHeight;
+        document.querySelector(".main").style.paddingTop = h + "px";
+      }
+      adjustMainPadding();
+      window.addEventListener("resize", adjustMainPadding);
+
+      // ── Désactiver le zoom sur double-tap (iOS) sur les boutons ──
+      document.querySelectorAll("button, select, .mini-card").forEach((el) => {
+        el.style.touchAction = "manipulation";
+      });
+
+      setTimeout(() => selectCity(0), 500);
+    </script>
+  </body>
+</html>
