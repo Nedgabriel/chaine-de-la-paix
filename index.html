@@ -430,6 +430,39 @@
         cursor: pointer;
         color: #777;
       }
+      .modal-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+      }
+      .modal-back {
+        display: none;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 12px;
+        border-radius: 9px;
+        border: 1px solid rgba(26, 39, 68, 0.12);
+        background: rgba(255, 255, 255, 0.92);
+        color: var(--navy);
+        font-family: "DM Sans", sans-serif;
+        font-size: 0.86rem;
+        cursor: pointer;
+        transition:
+          background 0.2s ease,
+          border-color 0.2s ease;
+      }
+      .modal-back.visible {
+        display: inline-flex;
+      }
+      .modal-back:hover {
+        background: rgba(201, 168, 76, 0.12);
+        border-color: rgba(201, 168, 76, 0.35);
+      }
+      .modal-back.visible {
+        display: inline-flex;
+      }
       .modal h2 {
         font-family: "Cormorant Garamond", serif;
         font-size: 1.8rem;
@@ -441,6 +474,37 @@
         color: #555;
         line-height: 1.6;
         margin-bottom: 16px;
+      }
+      .flyer-viewer {
+        display: none;
+        flex-direction: column;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+      .flyer-viewer.active {
+        display: flex;
+      }
+      .flyer-viewer iframe {
+        width: 100%;
+        min-height: 420px;
+        border-radius: 12px;
+        background: #fff;
+      }
+      .viewer-fallback {
+        background: rgba(26, 39, 68, 0.06);
+        border-radius: 10px;
+        padding: 14px 16px;
+        color: #333;
+        font-size: 0.85rem;
+      }
+      .viewer-fallback a {
+        display: inline-block;
+        margin-top: 8px;
+        color: var(--gold);
+        background: var(--navy);
+        padding: 8px 12px;
+        border-radius: 7px;
+        text-decoration: none;
       }
       .flyer-list {
         list-style: none;
@@ -629,22 +693,45 @@
     <!-- MODAL -->
     <div class="modal-backdrop" id="flyersModal">
       <div class="modal">
-        <button class="modal-close" onclick="closeFlyers()">✕</button>
-        <h2>📄 Flyers & Documents</h2>
+        <div class="modal-toolbar">
+          <button
+            type="button"
+            class="modal-back"
+            id="flyerBack"
+            onclick="showFlyerList()"
+          >
+            ← Précédent
+          </button>
+          <button class="modal-close" onclick="closeFlyers()">✕</button>
+        </div>
+        <h2 id="flyerTitle">📄 Flyers & Documents</h2>
         <p>
           Documents officiels de la chaîne pour la Paix du
           <strong>2 mai 2026</strong>.
         </p>
-        <!-- ============================================================
-         POUR AJOUTER UN FLYER : décommentez et adaptez un bloc <li>
-         ============================================================ -->
-    <ul class="flyer-list">
-      <li class="flyer-item">
-        <span>📌 Tous unis le samedi 2 mai 2026</span>
-        <a href="https://github.com/Nedgabriel/chaine-de-la-paix/blob/main/Flyers/Flyer%20Reli%C3%A9s%20pour%20la%20paix%20lieu%20et%20horaire%20Lyon.pdf" target="_blank">Télécharger</a>
-      </li>
-    </ul>
-    ==================================================
+        <div class="flyer-viewer" id="flyerViewerPane">
+          <iframe
+            id="flyerViewer"
+            frameborder="0"
+            title="Aperçu du flyer"
+          ></iframe>
+          <div class="viewer-fallback">
+            <p>Le document ne peut pas s'afficher directement ici.</p>
+            <a id="flyerFallbackLink" href="#" target="_blank" rel="noopener"
+              >Ouvrir le document dans un nouvel onglet</a
+            >
+          </div>
+        </div>
+        <ul class="flyer-list" id="flyerList">
+          <li class="flyer-item">
+            <span>📌 Tous unis le samedi 2 mai 2026</span>
+            <a
+              href="https://raw.githubusercontent.com/Nedgabriel/chaine-de-la-paix/main/Flyers/Flyer%20Reli%C3%A9s%20pour%20la%20paix%20lieu%20et%20horaire%20Lyon.pdf"
+              >Voir</a
+            >
+          </li>
+        </ul>
+        <div class="flyer-coming">Flyers disponibles prochainement…</div>
       </div>
     </div>
 
@@ -861,7 +948,7 @@
             },
           ],
         },
-        
+
         {
           ville: "Dole",
           drapeau: "🇫🇷",
@@ -1114,12 +1201,48 @@
       }
 
       // ── Flyers modal ──────────────────────────────────────────────
+      const flyerModal = document.getElementById("flyersModal");
+      const flyerList = document.getElementById("flyerList");
+      const flyerViewerPane = document.getElementById("flyerViewerPane");
+      const flyerViewer = document.getElementById("flyerViewer");
+      const flyerBack = document.getElementById("flyerBack");
+      const flyerTitle = document.getElementById("flyerTitle");
+      const flyerFallbackLink = document.getElementById("flyerFallbackLink");
+
       function openFlyers() {
-        document.getElementById("flyersModal").classList.add("open");
+        flyerModal.classList.add("open");
+        showFlyerList();
       }
       function closeFlyers() {
-        document.getElementById("flyersModal").classList.remove("open");
+        flyerModal.classList.remove("open");
+        flyerViewer.src = "";
       }
+      function showFlyerList() {
+        flyerViewerPane.classList.remove("active");
+        flyerBack.classList.remove("visible");
+        flyerTitle.textContent = "📄 Flyers & Documents";
+        flyerList.style.display = "block";
+        document.querySelector(".flyer-coming").style.display = "block";
+        flyerViewer.src = "";
+      }
+      function openFlyer(url, title) {
+        flyerList.style.display = "none";
+        document.querySelector(".flyer-coming").style.display = "none";
+        flyerBack.classList.add("visible");
+        flyerTitle.textContent = title || "Aperçu du flyer";
+        flyerViewerPane.classList.add("active");
+        const viewerUrl = url.endsWith(".pdf")
+          ? `https://docs.google.com/viewer?embedded=true&url=${encodeURIComponent(url)}`
+          : url;
+        flyerViewer.src = viewerUrl;
+        flyerFallbackLink.href = url;
+      }
+      document.querySelectorAll(".flyer-list a").forEach((link) => {
+        link.addEventListener("click", function (e) {
+          e.preventDefault();
+          openFlyer(this.href, this.textContent.trim());
+        });
+      });
       document
         .getElementById("flyersModal")
         .addEventListener("click", function (e) {
