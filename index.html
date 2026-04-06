@@ -440,6 +440,11 @@
         align-items: center;
         gap: 10px;
         margin-bottom: 12px;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: var(--cream);
+        padding-bottom: 8px;
       }
       .modal-back {
         display: none;
@@ -490,7 +495,8 @@
       }
       .flyer-viewer iframe {
         width: 100%;
-        min-height: 420px;
+        min-height: 250px;
+        max-height: 60vh;
         border-radius: 12px;
         background: #fff;
       }
@@ -720,7 +726,6 @@
             title="Aperçu du flyer"
           ></iframe>
           <div class="viewer-fallback">
-            <p>Le document ne peut pas s'afficher directement ici.</p>
             <a id="flyerFallbackLink" href="#" target="_blank" rel="noopener"
               >Ouvrir le document dans un nouvel onglet</a
             >
@@ -1224,7 +1229,6 @@
       function showFlyerList() {
         flyerViewerPane.classList.remove("active");
         flyerBack.classList.remove("visible");
-        flyerTitle.textContent = "📄 Flyers & Documents";
         flyerList.style.display = "block";
         document.querySelector(".flyer-coming").style.display = "block";
         flyerViewer.src = "";
